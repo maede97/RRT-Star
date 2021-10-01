@@ -10,7 +10,7 @@ int main(int argc, char const* argv[]) {
 
     RRTStar rrt_s = RRTStar(Point(0, 0), Point(3, 3), obstacles);
 
-    bool successful = rrt_s.compute(1000, 0.1);
+    bool successful = rrt_s.compute(500, 0.3);
 
     if (successful) {
         std::ofstream out("data.json");

@@ -1,4 +1,4 @@
-# RRT* - No-dependency implementation in C++
+# RRT* Implementation in C++
 Depends only on the standard C++ library.
 
 Inspired by https://gist.github.com/Fnjn/58e5eaa27a3dc004c3526ea82a92de80

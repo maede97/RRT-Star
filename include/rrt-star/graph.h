@@ -1,6 +1,5 @@
 #pragma once
 
-#include <rrt-star/math.h>
 #include <rrt-star/obstacle.h>
 
 #include <vector>

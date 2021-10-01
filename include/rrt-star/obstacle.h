@@ -2,6 +2,8 @@
 
 #include <rrt-star/math.h>
 
+#include <memory> // std::shared_ptr
+
 namespace rrt_star {
 class Obstacle {
 public:

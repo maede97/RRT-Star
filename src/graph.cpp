@@ -1,6 +1,5 @@
 #include <rrt-star/graph.h>
 
-#include <iostream>
 #include <limits>
 
 namespace rrt_star {
@@ -58,7 +57,6 @@ bool Graph::getClosestNeighbor(const Point& point, const std::vector<ObstacleSPt
     }
 
     return has_at_least_one;
-    ;
 }
 
 const size_t Graph::getNumVertices() const {

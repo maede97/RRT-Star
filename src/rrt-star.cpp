@@ -1,20 +1,10 @@
 #include <rrt-star/rrt-star.h>
 
-#include <iostream>
-
 namespace rrt_star {
 RRTStar::RRTStar(const Point& startPos, const Point& endPos, const std::vector<ObstacleSPtr>& obstacles)
     : m_startPos(startPos), m_endPos(endPos), m_obstacles(obstacles) {
-    // Let the domain be spanned by both start and end point.
-    m_domain.first = Point(std::min(startPos.x(), endPos.x()), std::min(startPos.y(), endPos.y()));
-    m_domain.second = Point(std::max(startPos.x(), endPos.x()), std::max(startPos.y(), endPos.y()));
-
-    m_gen.seed((size_t)time(0));
-}
-
-RRTStar::RRTStar(const Domain& domain, const Point& startPos, const Point& endPos, const std::vector<ObstacleSPtr>& obstacles)
-    : m_domain(domain), m_startPos(startPos), m_endPos(endPos), m_obstacles(obstacles) {
-    m_gen.seed((size_t)time(0));
+    // seed the RNG based on the current time
+    m_gen.seed((unsigned int)time(0));
 }
 
 bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
@@ -44,61 +34,47 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
         }
 
         // 4. Create the vertex based on the random vertex and the closest vertex
-        // TODO: put this code inside a function with a good name
-        Point closestVertex = m_graph.getVertex(closest_vertex_idx);
-        Vector dir = Vector(closestVertex, randomVertex);
-        double length = dir.norm();
-        double fac = std::min(length, maxStepSize) / length;
-        Vector dir_n = Vector(dir.x() * fac, dir.y() * fac);
-
-        Point newVertex = Point(closestVertex.x() + dir_n.x(), closestVertex.y() + dir_n.y());
+        double dist;
+        Point newVertex = createVertexBasedOnRandomAndClosest(randomVertex, closest_vertex_idx, maxStepSize, dist);
 
         // 5. Add edge to graph to all neighbors
         size_t new_idx = m_graph.addVertex(newVertex);
-        double dist = dir_n.norm();
         m_graph.addEdge(closest_vertex_idx, new_idx, dist);
         m_graph.distance(new_idx) = m_graph.distance(closest_vertex_idx) + dist;
 
         // 6. Update nearby vertices
+        // TODO: spatial checks can be improved, e.g. Quadtree?
         size_t num_vertices = m_graph.getNumVertices();
         for (size_t i = 0; i < num_vertices; i++) {
+            // skip the vertex itself
             if (i == new_idx)
                 continue;
 
+            // check if other vertex is close-by
             double dist = Vector(m_graph.getVertex(i), newVertex).norm();
             if (dist > maxStepSize)
                 continue;
 
+            // Check if the line to this vertex would go through an obstacle
             Line line = {m_graph.getVertex(i), newVertex};
-            bool isInAny = false;
-            for (const ObstacleSPtr obstacle : m_obstacles) {
-                if (obstacle->goesThrough(line)) {
-                    isInAny = true;
-                    break;
-                }
-            }
-            if (isInAny) {
+            if (goesThroughAnyObstacle(line))
                 continue;
-            }
 
+            // Add a connection if it makes sense and update the distances
             if (m_graph.distance(new_idx) + dist < m_graph.distance(i)) {
                 m_graph.addEdge(i, new_idx, dist);
                 m_graph.distance(i) = m_graph.distance(new_idx) + dist;
             }
         }
 
-        // 6. check if goal position reached
+        // 7. check if goal position reached
         double distance_to_end = Vector(newVertex, m_endPos).norm();
-        if (distance_to_end < 2 * maxStepSize) {
+        if (distance_to_end < maxStepSize) {
             size_t end_idx = m_graph.addVertex(m_endPos);
             m_graph.addEdge(new_idx, end_idx, distance_to_end);
 
-            // try to update the distance matrix
-            try {
-                m_graph.distance(end_idx) = std::min(m_graph.distance(end_idx), m_graph.distance(new_idx) + distance_to_end);
-            } catch (const std::exception&) {
-                m_graph.distance(end_idx) = m_graph.distance(new_idx) + distance_to_end;
-            }
+            // update the distance matrix for the end
+            m_graph.distance(end_idx) = std::min(m_graph.distance(end_idx), m_graph.distance(new_idx) + distance_to_end);
 
             m_success = true;
         }
@@ -109,10 +85,6 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
     }
 
     return m_success;
-}
-
-const Graph& RRTStar::getGraph() const {
-    return m_graph;
 }
 
 void RRTStar::dump(std::ostream& stream) const {
@@ -171,6 +143,15 @@ Point RRTStar::createRandomVertex() const {
     return Point(x, y);
 }
 
+bool RRTStar::goesThroughAnyObstacle(const Line& line) const {
+    for (const ObstacleSPtr obstacle : m_obstacles) {
+        if (obstacle->goesThrough(line)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool RRTStar::isInAnyObstacle(const Point& point) const {
     bool isInAny = false;
     for (const auto& obstacle : m_obstacles) {
@@ -179,6 +160,19 @@ bool RRTStar::isInAnyObstacle(const Point& point) const {
         }
     }
     return false;
+}
+
+Point RRTStar::createVertexBasedOnRandomAndClosest(const Point& randomVertex, size_t closestVertexIdx, const double& maxStepSize, double& distance) const {
+    Point closestVertex = m_graph.getVertex(closestVertexIdx);
+    Vector dir = Vector(closestVertex, randomVertex);
+    double length = dir.norm();
+    double fac = std::min(length, maxStepSize) / length;
+    Vector dir_n = Vector(dir.x() * fac, dir.y() * fac);
+
+    // store the distance as well
+    distance = dir_n.norm();
+
+    return closestVertex + dir_n;
 }
 
 }  // namespace rrt_star

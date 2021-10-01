@@ -4,7 +4,7 @@ import json
 
 def plot():
     # Load data
-    json_data = json.loads(open('build/data.json','r').read())
+    json_data = json.loads(open('../build/data.json','r').read())
 
     # Draw Edges
     data_edges = np.array(json_data['edges'])

@@ -1,24 +1,17 @@
 #include <rrt-star/dijkstra.h>
 
 #include <algorithm>
-#include <iostream>
 #include <unordered_map>
 
 namespace rrt_star {
 
-using MyPairType = std::pair<size_t, double>;
-struct CompareSecond {
-    bool operator()(const MyPairType& left, const MyPairType& right) const {
-        return left.second < right.second;
-    }
-};
-
-// TODO: replace dist by a heap?
 Path Dijkstra::compute(const Graph& graph, const Point& startPos, const Point& endPos) {
     size_t src_idx = graph.getIndex(startPos);
     size_t end_idx = graph.getIndex(endPos);
 
     std::vector<size_t> nodes = graph.getAllNeighborKeys();
+
+    // TODO: replace dist by a custom min heap?
     std::unordered_map<size_t, double> dist;
     std::unordered_map<size_t, size_t> prev;
 

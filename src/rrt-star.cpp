@@ -39,7 +39,7 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
 
         // 5. Add edge to graph to all neighbors
         size_t new_idx = m_graph.addVertex(newVertex);
-        m_graph.addEdge(closest_vertex_idx, new_idx, dist);
+        m_graph.addEdge(closest_vertex_idx, new_idx);
         m_graph.distance(new_idx) = m_graph.distance(closest_vertex_idx) + dist;
 
         // 6. Update nearby vertices
@@ -47,7 +47,7 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
         size_t num_vertices = m_graph.getNumVertices();
         for (size_t i = 0; i < num_vertices; i++) {
             // skip the vertex itself
-            if (i == new_idx)
+            if (i == new_idx || i == closest_vertex_idx)
                 continue;
 
             // check if other vertex is close-by
@@ -62,8 +62,12 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
 
             // Add a connection if it makes sense and update the distances
             if (m_graph.distance(new_idx) + dist < m_graph.distance(i)) {
-                m_graph.addEdge(i, new_idx, dist);
+                m_graph.addEdge(i, new_idx);
+                double cost_diff = m_graph.distance(new_idx) + dist - m_graph.distance(i);
                 m_graph.distance(i) = m_graph.distance(new_idx) + dist;
+
+                // propagate the cost to all leave nodes
+                m_graph.propagateCost(i, cost_diff);
             }
         }
 
@@ -71,7 +75,7 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
         double distance_to_end = Vector(newVertex, m_endPos).norm();
         if (distance_to_end < maxStepSize) {
             size_t end_idx = m_graph.addVertex(m_endPos);
-            m_graph.addEdge(new_idx, end_idx, distance_to_end);
+            m_graph.addEdge(new_idx, end_idx);
 
             // update the distance matrix for the end
             m_graph.distance(end_idx) = std::min(m_graph.distance(end_idx), m_graph.distance(new_idx) + distance_to_end);
@@ -81,7 +85,7 @@ bool RRTStar::compute(const size_t& iterations, const double& maxStepSize) {
     }
 
     if (m_success) {
-        m_path = Dijkstra::compute(m_graph, m_startPos, m_endPos);
+        m_path = m_graph.backtrack(m_startPos, m_endPos);
     }
 
     return m_success;

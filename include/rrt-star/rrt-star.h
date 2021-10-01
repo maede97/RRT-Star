@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rrt-star/dijkstra.h>
+#include <rrt-star/graph.h>
 
 #include <random>
 

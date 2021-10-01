@@ -45,7 +45,7 @@ def plot():
     plt.tight_layout()
     
     plt.show()
-    #plt.savefig("images/example.png",bbox_inches="tight")
+    #plt.savefig("../images/example.png",bbox_inches="tight")
 
 if __name__ == '__main__':
     plot()

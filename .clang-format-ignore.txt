@@ -1,0 +1,7 @@
+# build directories
+./build/*
+./cmake-build-*/*
+./.vscode/*
+
+# copied from thirdparty
+./ext/*
